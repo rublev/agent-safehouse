@@ -33,6 +33,8 @@ Enable only when required for the current task:
 - `shell-init`: shell startup/config file reads.
 - `ssh`: extended SSH agent socket and system SSH config integration.
 - `browser-native-messaging`: browser host messaging integration.
+- `process-control`: host process enumeration/signalling for local supervision tools.
+- `lldb`: LLDB/debugserver toolchain access plus debugger-grade host process inspection.
 - `macos-gui`: GUI app-related integration paths.
 - `electron`: Electron integration (also enables `macos-gui`).
 - `all-agents`: load all agent profiles.
@@ -45,15 +47,18 @@ Enable only when required for the current task:
 - Browser profile/cookie/session data.
 - Shell startup files unless `shell-init` is enabled.
 - Clipboard access unless `clipboard` is enabled.
+- Host process enumeration/control unless `process-control` or `lldb` is enabled.
+- LLDB/debugger toolchain and task-port access unless `lldb` is enabled.
 - Broad raw device access under `/dev`.
 - Setuid/setgid executable paths (`forbidden-exec-sugid`).
 
 ## Operational Defaults for Common Scenarios
 
 - **Daily coding agent use**: no optional integrations; rely on workdir + minimal explicit grants.
-- **Cross-repo read context**: add `--add-dirs-ro` for specific sibling paths.
+- **Cross-repo read context**: add `--add-dirs-ro` for specific sibling paths or files.
 - **Cloud task burst**: enable `cloud-credentials` only for that run/session.
 - **Docker/k8s workflow**: enable `docker` and/or `kubectl` only while needed.
+- **Local process triage**: prefer `process-control`; reserve `lldb` for real debugger sessions.
 - **IDE app-hosted agents**: enable `electron` and add `all-agents` only if extension-hosted CLIs require it.
 
 ## Before You Enable Anything

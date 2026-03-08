@@ -4,7 +4,7 @@ run_section_policy_behavior() {
   local policy_all_agents
   local policy_clipboard
   local policy_browser_native_messaging policy_cloud_credentials policy_onepassword
-  local policy_ssh policy_spotlight policy_cleanshot
+  local policy_ssh policy_spotlight policy_cleanshot policy_process_control policy_lldb
   local policy_docker_wide_read policy_docker_workdir_root policy_docker_append_allow
   local append_docker_allow append_docker_allow_marker
   local policy_override_same_literal policy_override_subpath_literal policy_override_wide_read
@@ -27,6 +27,7 @@ run_section_policy_behavior() {
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits browser native messaging grants" "/NativeMessagingHosts"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits Firefox native messaging grants" "/Mozilla/NativeMessagingHosts"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits extensions read grants" "/Default/Extensions"
+  assert_policy_contains "$POLICY_DEFAULT" "default policy includes global gitignore variants in core git profile" "(home-prefix \"/.gitignore\")"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits broad ~/.local read grant" "(home-subpath \"/.local\")"
   assert_policy_contains "$POLICY_DEFAULT" "default policy includes scoped ~/.local pipx grant" "/.local/pipx"
   assert_policy_contains "$POLICY_DEFAULT" "default policy includes scoped uv binary grant" "/.local/bin/uv"
@@ -49,6 +50,8 @@ run_section_policy_behavior() {
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits Spotlight integration profile" ";; Integration: Spotlight"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits CleanShot integration profile" ";; Integration: CleanShot"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits clipboard pasteboard access" "(global-name \"com.apple.pasteboard.1\")"
+  assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits process control integration profile" ";; Integration: Process Control"
+  assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits LLDB integration profile" ";; Integration: LLDB"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy no longer grants broad file-read* access to /private/var/run" "Resolver/daemon sockets and pid files used by networking flows."
   assert_policy_contains "$POLICY_DEFAULT" "default policy includes metadata-only /private/var/run grant" "Metadata traversal for /private/var/run socket namespace."
 
@@ -59,6 +62,8 @@ run_section_policy_behavior() {
   policy_spotlight="${TEST_CWD}/policy-feature-spotlight.sb"
   policy_cleanshot="${TEST_CWD}/policy-feature-cleanshot.sb"
   policy_clipboard="${TEST_CWD}/policy-feature-clipboard.sb"
+  policy_process_control="${TEST_CWD}/policy-feature-process-control.sb"
+  policy_lldb="${TEST_CWD}/policy-feature-lldb.sb"
 
   assert_command_succeeds "--enable=browser-native-messaging includes browser native messaging profile" "$GENERATOR" --output "$policy_browser_native_messaging" --enable=browser-native-messaging
   assert_command_succeeds "--enable=cloud-credentials includes cloud credentials profile" "$GENERATOR" --output "$policy_cloud_credentials" --enable=cloud-credentials
@@ -67,6 +72,8 @@ run_section_policy_behavior() {
   assert_command_succeeds "--enable=spotlight includes Spotlight profile" "$GENERATOR" --output "$policy_spotlight" --enable=spotlight
   assert_command_succeeds "--enable=cleanshot includes CleanShot profile" "$GENERATOR" --output "$policy_cleanshot" --enable=cleanshot
   assert_command_succeeds "--enable=clipboard includes Clipboard profile" "$GENERATOR" --output "$policy_clipboard" --enable=clipboard
+  assert_command_succeeds "--enable=process-control includes Process Control profile" "$GENERATOR" --output "$policy_process_control" --enable=process-control
+  assert_command_succeeds "--enable=lldb includes LLDB profile" "$GENERATOR" --output "$policy_lldb" --enable=lldb
 
   assert_policy_contains "$policy_browser_native_messaging" "--enable=browser-native-messaging includes browser native messaging grants" "/NativeMessagingHosts"
   assert_policy_contains "$policy_browser_native_messaging" "--enable=browser-native-messaging includes Firefox native messaging grants" "/Mozilla/NativeMessagingHosts"
@@ -91,6 +98,19 @@ run_section_policy_behavior() {
   assert_policy_contains "$policy_cleanshot" "--enable=cleanshot includes CleanShot profile marker" ";; Integration: CleanShot"
   assert_policy_contains "$policy_cleanshot" "--enable=cleanshot includes CleanShot media grant" "/Library/Application Support/CleanShot/media"
   assert_policy_contains "$policy_clipboard" "--enable=clipboard includes pasteboard service grant" "(global-name \"com.apple.pasteboard.1\")"
+  assert_policy_contains "$policy_process_control" "--enable=process-control includes Process Control profile marker" ";; Integration: Process Control"
+  assert_policy_contains "$policy_process_control" "--enable=process-control includes sysmond mach lookup grant" "(global-name \"com.apple.sysmond\")"
+  assert_policy_contains "$policy_process_control" "--enable=process-control includes broad signal grant" "(allow signal)"
+  assert_policy_not_contains "$policy_process_control" "--enable=process-control does not include debugger task-port grant" "(allow mach-priv-task-port)"
+  assert_policy_not_contains "$policy_process_control" "--enable=process-control does not include debugger pidinfo grant" "Host process status/introspection used by debugger inspection flows."
+  assert_policy_contains "$policy_lldb" "--enable=lldb includes LLDB profile marker" ";; Integration: LLDB"
+  assert_policy_contains "$policy_lldb" "--enable=lldb includes developer tools path grant" "/Library/Developer/CommandLineTools"
+  assert_policy_contains "$policy_lldb" "--enable=lldb includes lldb init file grant" "(home-prefix \"/.lldbinit\")"
+  assert_policy_contains "$policy_lldb" "--enable=lldb includes process pidinfo grant" "(allow process-info-pidinfo)"
+  assert_policy_contains "$policy_lldb" "--enable=lldb includes process setcontrol grant" "(allow process-info-setcontrol)"
+  assert_policy_contains "$policy_lldb" "--enable=lldb includes task-port grant" "(allow mach-priv-task-port)"
+  assert_policy_contains "$policy_lldb" "--enable=lldb implicitly injects process-control integration" "Optional integrations implicitly injected: process-control"
+  assert_policy_contains "$policy_lldb" "--enable=lldb includes Process Control profile via dependency" ";; Integration: Process Control"
 
   policy_all_agents="${TEST_CWD}/policy-all-agents-feature-toggle.sb"
   assert_command_succeeds "--enable=all-agents restores legacy agent-specific grants in policy mode" "$GENERATOR" --output "$policy_all_agents" --enable=all-agents
@@ -98,7 +118,7 @@ run_section_policy_behavior() {
   assert_policy_contains "$policy_all_agents" "all-agents policy includes opentui data grant" "/.local/share/opentui"
   assert_policy_contains "$policy_all_agents" "all-agents policy includes goose config grant" "/.config/goose"
   assert_policy_contains "$policy_all_agents" "all-agents policy includes kilocode binary grant" "/.local/bin/kilocode"
-  rm -f "$policy_all_agents" "$policy_clipboard"
+  rm -f "$policy_all_agents" "$policy_clipboard" "$policy_process_control" "$policy_lldb"
 
   for docker_sock in \
     "/var/run/docker.sock" \

@@ -642,7 +642,7 @@ emit_embedded_policy_template() {
 
 ;; Optional integrations explicitly enabled: macos-gui electron
 ;; Optional integrations implicitly injected: clipboard browser-native-messaging
-;; Optional integrations not included: docker kubectl ssh spotlight cleanshot 1password cloud-credentials shell-init
+;; Optional integrations not included: docker kubectl ssh spotlight cleanshot 1password cloud-credentials shell-init process-control lldb
 ;; Keychain integration (auto-injected from profile requirements): included
 ;; Use --enable=<feature> (comma-separated) to include optional integrations explicitly.
 ;; Note: selected app/agent profiles and enabled integrations can inject dependencies via $$require=<integration-profile-path>$$ metadata.
@@ -682,6 +682,7 @@ emit_embedded_policy_template() {
 
 (allow file-read*
     (home-prefix "/.gitconfig")    ;; User gitconfig and variants (.gitconfig.local, etc.) read by git CLI.
+    (home-prefix "/.gitignore")    ;; User global gitignore variants (.gitignore, .gitignore_global, etc.).
     (home-subpath "/.config/git")  ;; XDG-style git config directory (config, ignore, attributes).
     (home-literal "/.gitattributes")  ;; Global gitattributes file.
     (home-literal "/.ssh")         ;; Directory traversal for default SSH metadata grants used by git-over-ssh.
