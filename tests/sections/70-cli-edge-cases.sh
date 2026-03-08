@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 run_section_cli_edge_cases() {
-  local policy_enable_arg policy_enable_csv policy_enable_kubectl policy_enable_macos_gui policy_enable_electron policy_enable_browser_native_messaging policy_enable_shell_init policy_enable_process_control policy_enable_lldb policy_enable_all_agents policy_enable_all_apps policy_enable_all_scoped policy_enable_wide_read policy_workdir_empty_eq policy_env_grants policy_env_workdir
+  local policy_enable_arg policy_enable_csv policy_enable_kubectl policy_enable_agent_browser policy_enable_macos_gui policy_enable_electron policy_enable_browser_native_messaging policy_enable_shell_init policy_enable_process_control policy_enable_lldb policy_enable_all_agents policy_enable_all_apps policy_enable_all_scoped policy_enable_wide_read policy_workdir_empty_eq policy_env_grants policy_env_workdir
   local policy_dedup_paths
   local policy_reentrant_first policy_reentrant_second
   local bad_path_with_newline
@@ -44,6 +44,7 @@ run_section_cli_edge_cases() {
   policy_enable_arg="${TEST_CWD}/policy-enable-arg.sb"
   policy_enable_csv="${TEST_CWD}/policy-enable-csv.sb"
   policy_enable_kubectl="${TEST_CWD}/policy-enable-kubectl.sb"
+  policy_enable_agent_browser="${TEST_CWD}/policy-enable-agent-browser.sb"
   policy_enable_browser_native_messaging="${TEST_CWD}/policy-enable-browser-native-messaging.sb"
   policy_enable_shell_init="${TEST_CWD}/policy-enable-shell-init.sb"
   policy_enable_process_control="${TEST_CWD}/policy-enable-process-control.sb"
@@ -54,6 +55,11 @@ run_section_cli_edge_cases() {
   assert_policy_not_contains "$policy_enable_arg" "--enable docker does not include browser native messaging grants unless explicitly enabled" "/NativeMessagingHosts"
   assert_command_succeeds "--enable kubectl parses as separate argument form" "$GENERATOR" --output "$policy_enable_kubectl" --enable kubectl
   assert_policy_contains "$policy_enable_kubectl" "--enable kubectl includes kubectl integration profile marker" "#safehouse-test-id:kubectl-integration#"
+  assert_command_succeeds "--enable agent-browser parses as separate argument form" "$GENERATOR" --output "$policy_enable_agent_browser" --enable agent-browser
+  assert_policy_contains "$policy_enable_agent_browser" "--enable agent-browser includes agent-browser integration marker" "#safehouse-test-id:agent-browser-integration#"
+  assert_policy_contains "$policy_enable_agent_browser" "--enable agent-browser includes agent-browser state grant" "(home-subpath \"/.agent-browser\")"
+  assert_policy_contains "$policy_enable_agent_browser" "--enable agent-browser implies macOS GUI integration" ";; Integration: macOS GUI"
+  assert_policy_contains "$policy_enable_agent_browser" "--enable agent-browser implies shell-init integration" "#safehouse-test-id:shell-init-integration#"
   assert_command_succeeds "--enable browser-native-messaging parses as separate argument form" "$GENERATOR" --output "$policy_enable_browser_native_messaging" --enable browser-native-messaging
   assert_policy_contains "$policy_enable_browser_native_messaging" "--enable browser-native-messaging includes browser native messaging grants" "/NativeMessagingHosts"
   assert_command_fails "--enable env is rejected (runtime env now uses --env)" "$GENERATOR" --output "${TEST_CWD}/policy-enable-env-invalid.sb" --enable env

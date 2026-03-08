@@ -1,0 +1,29 @@
+;; ---------------------------------------------------------------------------
+;; Integration: Agent Browser
+;; Local agent-browser CLI state and Chromium bootstrap glue for skill-driven
+;; browser automation under Safehouse.
+;; Source: 55-integrations-optional/agent-browser.sb
+;; #safehouse-test-id:agent-browser-integration#
+;; $$require=55-integrations-optional/macos-gui.sb,55-integrations-optional/shell-init.sb$$
+;; ---------------------------------------------------------------------------
+
+;; `agent-browser` keeps daemon sockets, pid files, screenshots, saved state,
+;; and user defaults under ~/.agent-browser.
+;;
+;; Playwright's bundled chrome-headless-shell also registers a per-process
+;; MachPortRendezvousServer endpoint on macOS. Without this registration grant,
+;; Chromium aborts during launch inside the outer Seatbelt sandbox.
+
+(allow file-read* file-write*
+    (home-literal "")                                                 ;; Traverse HOME when workdir is outside $HOME and the CLI probes ~/.agent-browser directly.
+    (home-literal "/.agent-browser")                                  ;; Directory entry access for direct stat/readdir calls on ~/.agent-browser.
+    (home-subpath "/.agent-browser")
+)
+
+(allow mach-register
+    (global-name-regex #"^org\.chromium\.Chromium\.MachPortRendezvousServer\.")
+)
+
+(allow mach-lookup
+    (global-name-regex #"^org\.chromium\.Chromium\.MachPortRendezvousServer\.")
+)

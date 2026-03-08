@@ -3,7 +3,7 @@
 run_section_policy_behavior() {
   local policy_all_agents
   local policy_clipboard
-  local policy_browser_native_messaging policy_cloud_credentials policy_onepassword
+  local policy_agent_browser policy_browser_native_messaging policy_cloud_credentials policy_onepassword
   local policy_ssh policy_spotlight policy_cleanshot policy_process_control policy_lldb
   local policy_docker_wide_read policy_docker_workdir_root policy_docker_append_allow
   local append_docker_allow append_docker_allow_marker
@@ -24,6 +24,8 @@ run_section_policy_behavior() {
   assert_policy_contains "$POLICY_DEFAULT" "default policy container deny block includes OrbStack home socket path" "/.orbstack/run/docker.sock"
   assert_policy_contains "$POLICY_DEFAULT" "default policy container deny block includes Podman runtime socket path" "/var/run/podman/podman.sock"
   assert_policy_contains "$POLICY_DEFAULT" "default policy container deny block includes Colima socket regex" "/\\\\.colima/[^/]+/docker\\\\.sock$"
+  assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits agent-browser state grant" "/.agent-browser"
+  assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits agent-browser Chromium mach rendezvous grant" "MachPortRendezvousServer"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits browser native messaging grants" "/NativeMessagingHosts"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits Firefox native messaging grants" "/Mozilla/NativeMessagingHosts"
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy omits extensions read grants" "/Default/Extensions"
@@ -55,6 +57,7 @@ run_section_policy_behavior() {
   assert_policy_not_contains "$POLICY_DEFAULT" "default policy no longer grants broad file-read* access to /private/var/run" "Resolver/daemon sockets and pid files used by networking flows."
   assert_policy_contains "$POLICY_DEFAULT" "default policy includes metadata-only /private/var/run grant" "Metadata traversal for /private/var/run socket namespace."
 
+  policy_agent_browser="${TEST_CWD}/policy-feature-agent-browser.sb"
   policy_browser_native_messaging="${TEST_CWD}/policy-feature-browser-native-messaging.sb"
   policy_cloud_credentials="${TEST_CWD}/policy-feature-cloud-credentials.sb"
   policy_onepassword="${TEST_CWD}/policy-feature-1password.sb"
@@ -65,6 +68,7 @@ run_section_policy_behavior() {
   policy_process_control="${TEST_CWD}/policy-feature-process-control.sb"
   policy_lldb="${TEST_CWD}/policy-feature-lldb.sb"
 
+  assert_command_succeeds "--enable=agent-browser includes agent-browser profile" "$GENERATOR" --output "$policy_agent_browser" --enable=agent-browser
   assert_command_succeeds "--enable=browser-native-messaging includes browser native messaging profile" "$GENERATOR" --output "$policy_browser_native_messaging" --enable=browser-native-messaging
   assert_command_succeeds "--enable=cloud-credentials includes cloud credentials profile" "$GENERATOR" --output "$policy_cloud_credentials" --enable=cloud-credentials
   assert_command_succeeds "--enable=1password includes 1Password profile" "$GENERATOR" --output "$policy_onepassword" --enable=1password
@@ -74,6 +78,12 @@ run_section_policy_behavior() {
   assert_command_succeeds "--enable=clipboard includes Clipboard profile" "$GENERATOR" --output "$policy_clipboard" --enable=clipboard
   assert_command_succeeds "--enable=process-control includes Process Control profile" "$GENERATOR" --output "$policy_process_control" --enable=process-control
   assert_command_succeeds "--enable=lldb includes LLDB profile" "$GENERATOR" --output "$policy_lldb" --enable=lldb
+
+  assert_policy_contains "$policy_agent_browser" "--enable=agent-browser includes Agent Browser profile marker" "#safehouse-test-id:agent-browser-integration#"
+  assert_policy_contains "$policy_agent_browser" "--enable=agent-browser includes agent-browser state grant" "(home-subpath \"/.agent-browser\")"
+  assert_policy_contains "$policy_agent_browser" "--enable=agent-browser includes Chromium mach rendezvous grant" "MachPortRendezvousServer"
+  assert_policy_contains "$policy_agent_browser" "--enable=agent-browser implicitly injects macOS GUI integration" ";; Integration: macOS GUI"
+  assert_policy_contains "$policy_agent_browser" "--enable=agent-browser implicitly injects shell-init integration" "#safehouse-test-id:shell-init-integration#"
 
   assert_policy_contains "$policy_browser_native_messaging" "--enable=browser-native-messaging includes browser native messaging grants" "/NativeMessagingHosts"
   assert_policy_contains "$policy_browser_native_messaging" "--enable=browser-native-messaging includes Firefox native messaging grants" "/Mozilla/NativeMessagingHosts"
@@ -190,6 +200,10 @@ EOF
     assert_denied_if_exists "$POLICY_DEFAULT" "browser extensions denied by default (${browser_name})" "$ext_dir" /bin/ls "$ext_dir"
     assert_allowed_if_exists "$policy_browser_native_messaging" "browser extensions allowed with --enable=browser-native-messaging (${browser_name})" "$ext_dir" /bin/ls "$ext_dir"
   done
+
+  assert_denied_if_exists "$POLICY_DEFAULT" "agent-browser state dir denied by default" "${HOME}/.agent-browser" /bin/ls "${HOME}/.agent-browser"
+  assert_allowed_if_exists "$policy_agent_browser" "agent-browser state dir allowed with --enable=agent-browser" "${HOME}/.agent-browser" /bin/ls "${HOME}/.agent-browser"
+  rm -f "$policy_agent_browser"
 
   for cloud_dir in "${HOME}/.azure" "${HOME}/.azd"; do
     assert_denied_if_exists "$POLICY_DEFAULT" "cloud credential directory denied by default (${cloud_dir})" "$cloud_dir" /bin/ls "$cloud_dir"
