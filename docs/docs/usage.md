@@ -63,12 +63,17 @@ safehouse --enable=shell-init -- claude --dangerously-skip-permissions
 # Browser native messaging integration
 safehouse --enable=browser-native-messaging -- codex
 
-# Host process inspection/signalling for local debugging
-safehouse --enable=process-debug -- claude --dangerously-skip-permissions
+# Host process enumeration/signalling for local debugging
+safehouse --enable=process-control -- claude --dangerously-skip-permissions
+
+# LLDB/debugger allowances for agent-driven native debugging
+safehouse --enable=lldb -- claude --dangerously-skip-permissions
 
 # Broad read-only visibility across /
 safehouse --enable=wide-read -- claude --dangerously-skip-permissions
 ```
+
+`--enable=lldb` opens the sandbox side for LLDB/debugger workflows, but macOS can still deny attach to protected or non-debuggable targets.
 
 ## Environment Modes
 

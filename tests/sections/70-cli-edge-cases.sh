@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 run_section_cli_edge_cases() {
-  local policy_enable_arg policy_enable_csv policy_enable_kubectl policy_enable_macos_gui policy_enable_electron policy_enable_browser_native_messaging policy_enable_shell_init policy_enable_all_agents policy_enable_all_apps policy_enable_all_scoped policy_enable_wide_read policy_workdir_empty_eq policy_env_grants policy_env_workdir
+  local policy_enable_arg policy_enable_csv policy_enable_kubectl policy_enable_macos_gui policy_enable_electron policy_enable_browser_native_messaging policy_enable_shell_init policy_enable_process_control policy_enable_lldb policy_enable_all_agents policy_enable_all_apps policy_enable_all_scoped policy_enable_wide_read policy_workdir_empty_eq policy_env_grants policy_env_workdir
   local policy_dedup_paths
   local policy_reentrant_first policy_reentrant_second
   local bad_path_with_newline
@@ -46,6 +46,8 @@ run_section_cli_edge_cases() {
   policy_enable_kubectl="${TEST_CWD}/policy-enable-kubectl.sb"
   policy_enable_browser_native_messaging="${TEST_CWD}/policy-enable-browser-native-messaging.sb"
   policy_enable_shell_init="${TEST_CWD}/policy-enable-shell-init.sb"
+  policy_enable_process_control="${TEST_CWD}/policy-enable-process-control.sb"
+  policy_enable_lldb="${TEST_CWD}/policy-enable-lldb.sb"
   assert_command_succeeds "--enable docker parses as separate argument form" "$GENERATOR" --output "$policy_enable_arg" --enable docker
   assert_policy_contains "$policy_enable_arg" "--enable docker includes docker grants" "/var/run/docker.sock"
   assert_policy_contains "$policy_enable_arg" "--enable docker preamble reports explicit optional integration inclusion" "Optional integrations explicitly enabled: docker"
@@ -59,6 +61,10 @@ run_section_cli_edge_cases() {
   assert_command_succeeds "--enable shell-init parses as separate argument form" "$GENERATOR" --output "$policy_enable_shell_init" --enable shell-init
   assert_policy_contains "$policy_enable_shell_init" "--enable shell-init includes shell init integration marker" "#safehouse-test-id:shell-init-integration#"
   assert_policy_contains "$policy_enable_shell_init" "--enable shell-init includes shell startup file grants" "(home-literal \"/.zshenv\")"
+  assert_command_succeeds "--enable process-control parses as separate argument form" "$GENERATOR" --output "$policy_enable_process_control" --enable process-control
+  assert_policy_contains "$policy_enable_process_control" "--enable process-control includes Process Control integration marker" ";; Integration: Process Control"
+  assert_command_succeeds "--enable lldb parses as separate argument form" "$GENERATOR" --output "$policy_enable_lldb" --enable lldb
+  assert_policy_contains "$policy_enable_lldb" "--enable lldb includes LLDB integration marker" ";; Integration: LLDB"
   assert_command_succeeds "--enable=docker,electron,kubectl parses CSV with whitespace" "$GENERATOR" --output "$policy_enable_csv" "--enable=docker, electron, kubectl"
   assert_policy_contains "$policy_enable_csv" "CSV --enable includes docker grants" "/var/run/docker.sock"
   assert_policy_contains "$policy_enable_csv" "CSV --enable includes electron grants" "#safehouse-test-id:electron-integration#"

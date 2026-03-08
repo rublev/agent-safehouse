@@ -31,7 +31,8 @@
 - `cloud-credentials`
 - `browser-native-messaging`
 - `shell-init`
-- `process-debug`
+- `process-control`
+- `lldb`
 - `all-agents`
 - `all-apps`
 - `wide-read`

@@ -36,7 +36,9 @@ PROFILE_KEYS=(
   "profiles/55-integrations-optional/electron.sb"
   "profiles/55-integrations-optional/keychain.sb"
   "profiles/55-integrations-optional/kubectl.sb"
+  "profiles/55-integrations-optional/lldb.sb"
   "profiles/55-integrations-optional/macos-gui.sb"
+  "profiles/55-integrations-optional/process-control.sb"
   "profiles/55-integrations-optional/shell-init.sb"
   "profiles/55-integrations-optional/spotlight.sb"
   "profiles/55-integrations-optional/ssh.sb"
@@ -1061,6 +1063,46 @@ __SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_keychain_sb__
 )
 __SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_kubectl_sb__
       ;;
+    "profiles/55-integrations-optional/lldb.sb")
+      cat <<'__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_lldb_sb__'
+;; ---------------------------------------------------------------------------
+;; Integration: LLDB
+;; LLDB/debugserver toolchain access and debugger-grade host process inspection.
+;; Source: 55-integrations-optional/lldb.sb
+;; $$require=55-integrations-optional/process-control.sb$$
+;; ---------------------------------------------------------------------------
+
+;; Extends process-control with task-port and pid-info access, plus read access
+;; to the selected Apple developer toolchain roots that LLDB discovers through
+;; xcode-select/xcrun on macOS.
+;; Note: successful attach still depends on host macOS debugger policy
+;; (taskgated, SIP/hardened targets, developer tooling installation, etc.).
+
+(allow file-read*
+    (home-prefix "/.lldbinit")                                         ;; User LLDB init file and variants.
+    (literal "/Library")                                               ;; Ancestor traversal for selected developer toolchain roots.
+    (literal "/Library/Developer")                                     ;; Ancestor traversal for Command Line Tools.
+    (subpath "/Library/Developer/CommandLineTools")                    ;; Command Line Tools root (lldb, LLDB.framework, debugserver resources).
+    (literal "/Applications")                                          ;; Ancestor traversal for Xcode app bundles.
+    (literal "/Applications/Xcode.app")                                ;; Xcode app root when xcode-select targets the default bundle.
+    (subpath "/Applications/Xcode.app/Contents/Developer")             ;; Full Xcode developer toolchain root.
+    (literal "/Applications/Xcode-beta.app")                           ;; Xcode beta app root when selected explicitly.
+    (subpath "/Applications/Xcode-beta.app/Contents/Developer")        ;; Xcode beta developer toolchain root.
+    (literal "/System")                                                ;; Ancestor traversal for /System/Volumes/Data compatibility aliases.
+    (literal "/System/Volumes")                                        ;; Ancestor traversal for /System/Volumes/Data compatibility aliases.
+    (literal "/System/Volumes/Data")                                   ;; Ancestor traversal for /System/Volumes/Data compatibility aliases.
+    (literal "/System/Volumes/Data/Applications")                      ;; Ancestor traversal for Data-backed /Applications paths.
+    (literal "/System/Volumes/Data/Applications/Xcode.app")            ;; Data-backed Xcode app root on some path-resolution flows.
+    (subpath "/System/Volumes/Data/Applications/Xcode.app/Contents/Developer")
+    (literal "/System/Volumes/Data/Applications/Xcode-beta.app")       ;; Data-backed Xcode beta app root on some path-resolution flows.
+    (subpath "/System/Volumes/Data/Applications/Xcode-beta.app/Contents/Developer")
+)
+
+(allow process-info-pidinfo)           ;; Host process status/introspection used by debugger inspection flows.
+(allow process-info-setcontrol)        ;; Process control metadata operations used by LLDB/debugserver.
+(allow mach-priv-task-port)            ;; Allow task-port lookups for debuggers and advanced process inspection.
+__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_lldb_sb__
+      ;;
     "profiles/55-integrations-optional/macos-gui.sb")
       cat <<'__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_macos_gui_sb__'
 ;; ---------------------------------------------------------------------------
@@ -1227,6 +1269,25 @@ __SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_kubectl_sb__
     (iokit-user-client-class "AppleNVMeEANUC")
 )
 __SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_macos_gui_sb__
+      ;;
+    "profiles/55-integrations-optional/process-control.sb")
+      cat <<'__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_process_control_sb__'
+;; ---------------------------------------------------------------------------
+;; Integration: Process Control
+;; Host process enumeration and signalling for local supervision workflows.
+;; Source: 55-integrations-optional/process-control.sb
+;; ---------------------------------------------------------------------------
+
+;; Enables host process lookup and signalling for tools such as pgrep, pkill,
+;; kill, and killall. This intentionally does NOT include task-port access or
+;; debugger-grade process inspection.
+
+(allow mach-lookup
+    (global-name "com.apple.sysmond")  ;; Process inventory service used by pgrep/pkill on modern macOS.
+)
+
+(allow signal)                         ;; Allow signalling host processes (kill, pkill, kill -0).
+__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_process_control_sb__
       ;;
     "profiles/55-integrations-optional/shell-init.sb")
       cat <<'__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_shell_init_sb__'
@@ -1841,6 +1902,8 @@ enable_onepassword_integration=0
 enable_cloud_credentials_integration=0
 enable_browser_native_messaging_integration=0
 enable_shell_init_integration=0
+enable_process_control_integration=0
+enable_lldb_integration=0
 }
 optional_integration_features=(
   docker
@@ -1855,8 +1918,10 @@ optional_integration_features=(
   cloud-credentials
   browser-native-messaging
   shell-init
+  process-control
+  lldb
 )
-supported_enable_features="docker, kubectl, macos-gui, electron, ssh, spotlight, cleanshot, clipboard, 1password, cloud-credentials, browser-native-messaging, shell-init, all-agents, all-apps, wide-read"
+supported_enable_features="docker, kubectl, macos-gui, electron, ssh, spotlight, cleanshot, clipboard, 1password, cloud-credentials, browser-native-messaging, shell-init, process-control, lldb, all-agents, all-apps, wide-read"
 enable_all_agents_profiles=0
 enable_all_apps_profiles=0
 enable_wide_read_access=0
@@ -3766,6 +3831,8 @@ Policy scope options:
       Supported values: ${supported_enable_features}
       Note: electron implies macos-gui
       Note: shell-init enables shell startup file reads
+      Note: process-control enables host process enumeration/signalling
+      Note: lldb enables LLDB toolchain + task-port access and implies process-control
       Note: all-agents loads every 60-agents profile
       Note: all-apps loads every 65-apps profile
       Note: wide-read grants read-only visibility across / (broad; use cautiously)
@@ -3786,11 +3853,11 @@ Policy scope options:
 
   --add-dirs-ro PATHS
   --add-dirs-ro=PATHS
-      Colon-separated paths to grant read-only access
+      Colon-separated file/directory paths to grant read-only access
 
   --add-dirs PATHS
   --add-dirs=PATHS
-      Colon-separated paths to grant read/write access
+      Colon-separated file/directory paths to grant read/write access
 
   --workdir DIR
   --workdir=DIR

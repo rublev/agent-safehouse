@@ -22,6 +22,8 @@ Each policy rule should answer one question:
 
 - Filesystem reads for core macOS/system/toolchain paths needed for shells, compilers, and package managers.
 - Process execution/forking so normal dev subprocess trees work.
+- Host process enumeration/signalling only when `--enable=process-control` or `--enable=lldb` is selected.
+- LLDB/debugger toolchain access only when `--enable=lldb` is selected.
 - Agent/app-specific config grants scoped to the wrapped command.
 - Keychain/security integration when selected profiles declare keychain dependency metadata.
 - Core SCM integrations (`git`, `gh`, `glab`) so repo workflows keep working.
@@ -35,6 +37,8 @@ Each policy rule should answer one question:
 - Shell startup files unless `--enable=shell-init` is used.
 - Browser profile data unless `--enable=browser-native-messaging` is used.
 - Clipboard access unless `--enable=clipboard` is used.
+- Host process enumeration/control unless `--enable=process-control` or `--enable=lldb` is used.
+- LLDB/debugger toolchain and task-port access unless `--enable=lldb` is used.
 - Broad raw device access under `/dev`.
 - Setuid/setgid executable paths (`forbidden-exec-sugid`).
 

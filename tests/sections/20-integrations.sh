@@ -11,6 +11,10 @@ run_section_integrations() {
   local policy_keychain_agent policy_non_keychain_agent policy_claude_chrome
   local macos_gui_marker electron_marker
 
+  section_begin "Git Metadata Defaults"
+  assert_allowed_if_exists "$POLICY_DEFAULT" "read ~/.gitconfig allowed by default" "${HOME}/.gitconfig" /bin/cat "${HOME}/.gitconfig"
+  assert_allowed_strict "$POLICY_DEFAULT" "read ~/.gitignore* allowed by default" /bin/cat "$TEST_GITIGNORE_FILE"
+
   section_begin "SSH Metadata Defaults and SSH Integration (Opt-In)"
   policy_ssh="${TEST_CWD}/policy-enable-ssh.sb"
   assert_command_succeeds "safehouse generates policy with --enable=ssh" "$GENERATOR" --output "$policy_ssh" --enable=ssh

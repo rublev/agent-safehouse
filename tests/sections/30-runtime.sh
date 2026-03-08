@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 run_section_runtime() {
-  local policy_shell_init
+  local policy_shell_init policy_process_control policy_lldb
+  local process_debug_dir process_debug_bin process_debug_pid
 
   section_begin "System Runtime"
   assert_allowed "$POLICY_DEFAULT" "read /usr/bin" /bin/ls /usr/bin
@@ -30,6 +31,34 @@ run_section_runtime() {
   section_begin "Process Execution"
   assert_allowed "$POLICY_DEFAULT" "fork + exec (sh -c echo)" /bin/sh -c 'echo sandbox-ok'
   assert_allowed "$POLICY_DEFAULT" "nested subprocesses (sh > sh > echo)" /bin/sh -c '/bin/sh -c "echo nested-ok"'
+
+  section_begin "Host Process Control (Opt-In)"
+  policy_process_control="${TEST_CWD}/policy-runtime-process-control.sb"
+  process_debug_dir="$(mktemp -d /tmp/safehouse-process-debug.XXXXXX)"
+  process_debug_bin="${process_debug_dir}/safehouse-proc-test"
+  assert_command_succeeds "--enable=process-control generates policy with host process control grants" "$GENERATOR" --output "$policy_process_control" --enable=process-control
+  /bin/ln -s /bin/sleep "$process_debug_bin"
+  "$process_debug_bin" 60 >/dev/null 2>&1 &
+  process_debug_pid=$!
+
+  assert_denied_strict "$POLICY_DEFAULT" "signal host process denied by default (kill -0)" /bin/kill -0 "$process_debug_pid"
+  assert_denied_strict "$POLICY_DEFAULT" "host process enumeration/signalling denied by default (pkill -0)" /usr/bin/pkill -0 -f "$process_debug_bin"
+  assert_allowed_strict "$policy_process_control" "signal host process allowed with --enable=process-control (kill -0)" /bin/kill -0 "$process_debug_pid"
+  assert_allowed_strict "$policy_process_control" "host process enumeration/signalling allowed with --enable=process-control (pkill -0)" /usr/bin/pkill -0 -f "$process_debug_bin"
+
+  section_begin "LLDB (Opt-In)"
+  policy_lldb="${TEST_CWD}/policy-runtime-lldb.sb"
+  assert_command_succeeds "--enable=lldb generates policy with LLDB toolchain/debug grants" "$GENERATOR" --output "$policy_lldb" --enable=lldb
+  assert_denied_strict "$POLICY_DEFAULT" "lldb --version denied by default" /usr/bin/lldb --version
+  assert_denied_strict "$policy_process_control" "lldb --version denied with only --enable=process-control" /usr/bin/lldb --version
+  assert_allowed_strict "$policy_lldb" "lldb --version allowed with --enable=lldb" /usr/bin/lldb --version
+  assert_allowed_strict "$policy_lldb" "xcrun -f lldb allowed with --enable=lldb" /usr/bin/xcrun -f lldb
+  assert_allowed_strict "$policy_lldb" "signal host process allowed with --enable=lldb via implicit process-control (kill -0)" /bin/kill -0 "$process_debug_pid"
+  assert_allowed_strict "$policy_lldb" "host process enumeration/signalling allowed with --enable=lldb via implicit process-control (pkill -0)" /usr/bin/pkill -0 -f "$process_debug_bin"
+
+  /bin/kill "$process_debug_pid" >/dev/null 2>&1 || true
+  wait "$process_debug_pid" 2>/dev/null || true
+  rm -rf "$process_debug_dir" "$policy_process_control" "$policy_lldb"
 }
 
 register_section run_section_runtime

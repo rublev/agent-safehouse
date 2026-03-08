@@ -37,6 +37,8 @@ Policy scope options:
       Supported values: ${supported_enable_features}
       Note: electron implies macos-gui
       Note: shell-init enables shell startup file reads
+      Note: process-control enables host process enumeration/signalling
+      Note: lldb enables LLDB toolchain + task-port access and implies process-control
       Note: all-agents loads every 60-agents profile
       Note: all-apps loads every 65-apps profile
       Note: wide-read grants read-only visibility across / (broad; use cautiously)
@@ -57,11 +59,11 @@ Policy scope options:
 
   --add-dirs-ro PATHS
   --add-dirs-ro=PATHS
-      Colon-separated paths to grant read-only access
+      Colon-separated file/directory paths to grant read-only access
 
   --add-dirs PATHS
   --add-dirs=PATHS
-      Colon-separated paths to grant read/write access
+      Colon-separated file/directory paths to grant read/write access
 
   --workdir DIR
   --workdir=DIR
