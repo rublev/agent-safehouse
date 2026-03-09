@@ -195,6 +195,7 @@ run_section_cli_edge_cases() {
   assert_command_succeeds "--env preserves inherited environment vars for wrapped commands" /usr/bin/env SAFEHOUSE_TEST_SECRET="safehouse-secret" "$SAFEHOUSE" --env -- /bin/sh -c '[ "${SAFEHOUSE_TEST_SECRET:-}" = "safehouse-secret" ]'
   assert_command_succeeds "--env parses after command token before -- separator" /usr/bin/env SAFEHOUSE_TEST_SECRET="safehouse-secret" "$SAFEHOUSE" /bin/sh --env -c '[ "${SAFEHOUSE_TEST_SECRET:-}" = "safehouse-secret" ]'
   assert_command_fails "--env cannot be combined with --env-pass" "$SAFEHOUSE" --env --env-pass=SAFEHOUSE_TEST_SECRET -- /usr/bin/true
+  assert_command_succeeds "safehouse appends common macOS dev paths to sanitized PATH" /usr/bin/env -i HOME="$HOME" USER="$USER" LOGNAME="$LOGNAME" TMPDIR="${TMPDIR:-/tmp}" PATH="/usr/bin:/bin:/usr/sbin:/sbin" "$SAFEHOUSE" -- /bin/sh -c 'case ":${PATH}:" in *:/usr/local/bin:*) : ;; *) exit 1 ;; esac && case ":${PATH}:" in *:/opt/homebrew/bin:*) : ;; *) exit 1 ;; esac && case ":${PATH}:" in *:"${HOME}/.local/bin":*) : ;; *) exit 1 ;; esac'
   assert_command_fails "--env=FILE cannot be combined with --env" "$SAFEHOUSE" --env=./agent.env --env -- /usr/bin/true
 
   assert_command_succeeds "--env-pass skips requested host variable when it is missing" "$SAFEHOUSE" --env-pass=SAFEHOUSE_TEST_PASS_MISSING -- /bin/sh -c '[ -z "${SAFEHOUSE_TEST_PASS_MISSING+x}" ] && [ -n "${PATH:-}" ]'

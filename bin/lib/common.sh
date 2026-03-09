@@ -17,13 +17,14 @@ preflight_runtime() {
 }
 
 build_sanitized_exec_environment() {
-  local resolved_pwd resolved_user resolved_logname var
+  local resolved_pwd resolved_user resolved_logname sanitized_path var
 
   sanitized_exec_environment=()
 
   # Always provide stable core runtime values.
   sanitized_exec_environment+=("HOME=${home_dir}")
-  sanitized_exec_environment+=("PATH=${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}")
+  sanitized_path="$(build_sanitized_exec_path "${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}")"
+  sanitized_exec_environment+=("PATH=${sanitized_path}")
   sanitized_exec_environment+=("SHELL=${SHELL:-/bin/sh}")
   sanitized_exec_environment+=("TMPDIR=${TMPDIR:-/tmp}")
 
@@ -55,6 +56,51 @@ build_sanitized_exec_environment() {
       sanitized_exec_environment+=("${var}=${!var}")
     fi
   done
+}
+
+build_sanitized_exec_path() {
+  local base_path="$1"
+  local entry existing found
+  local -a common_dev_paths=()
+  local -a path_entries=()
+  local -a sanitized_path_entries=()
+
+  base_path="${base_path:-/usr/bin:/bin:/usr/sbin:/sbin}"
+  IFS=':' read -r -a path_entries <<< "$base_path"
+
+  # GUI-launched apps on macOS often inherit a stripped PATH. Keep the caller's
+  # ordering, but append common tool locations so Homebrew/npm-managed agents still work.
+  common_dev_paths=(
+    "/usr/local/bin"
+    "/usr/local/sbin"
+    "/opt/homebrew/bin"
+    "/opt/homebrew/sbin"
+    "${home_dir}/.local/bin"
+  )
+
+  for entry in "${common_dev_paths[@]}"; do
+    found=0
+    for existing in "${path_entries[@]-}"; do
+      if [[ "$existing" == "$entry" ]]; then
+        found=1
+        break
+      fi
+    done
+
+    if [[ "$found" -eq 0 ]]; then
+      path_entries+=("$entry")
+    fi
+  done
+
+  for entry in "${path_entries[@]-}"; do
+    [[ -n "$entry" ]] || continue
+    sanitized_path_entries+=("$entry")
+  done
+
+  (
+    IFS=':'
+    printf '%s\n' "${sanitized_path_entries[*]}"
+  )
 }
 
 build_full_exec_environment() {
