@@ -363,15 +363,8 @@ __SAFEHOUSE_EMBEDDED_profiles_30_toolchains_go_sb__
 
 ;; Includes common Maven/Gradle/SBT/Coursier and Java runtime manager locations.
 
-;; JDK/JRE bundles are read-only; the agent needs to discover and execute the
-;; JVM but must not modify system or user JDK installations.
-(allow file-read*
-    (subpath "/Library/Java")                                         ;; System-wide JDK/JRE bundles live here on macOS and are probed by /usr/bin/java.
-    (home-subpath "/Library/Java")                                    ;; User-local JDK bundles under ~/Library/Java let /usr/bin/java resolve a runtime without system installs.
-)
-
-;; User-local toolchain state (caches, configs, version managers) is read-write.
 (allow file-read* file-write*
+    (subpath "/Library/Java")                                         ;; System-wide JDK/JRE bundles live here on macOS and are probed by /usr/bin/java.
     (home-subpath "/.m2")
     (home-subpath "/.gradle")
     (home-subpath "/.ivy2")
@@ -380,6 +373,7 @@ __SAFEHOUSE_EMBEDDED_profiles_30_toolchains_go_sb__
     (home-subpath "/.sdkman")
     (home-subpath "/.cache/coursier")
     (home-subpath "/.coursier")
+    (home-subpath "/Library/Java")                                    ;; User-local JDK bundles under ~/Library/Java let /usr/bin/java resolve a runtime without system installs.
     (home-subpath "/Library/Application Support/Coursier")
     (home-subpath "/Library/Caches/Coursier")
     (home-subpath "/.java")
