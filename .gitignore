@@ -12,3 +12,6 @@ docs/.vitepress/dist/
 .env.*
 !.env.example
 telemetry-id
+
+# vs code stuff
+*.code-workspace
