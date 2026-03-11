@@ -1,5 +1,11 @@
+print_version() {
+  printf '%s %s\n' "$safehouse_project_name" "$safehouse_project_version"
+}
+
 usage() {
   cat <<USAGE
+${safehouse_project_name} ${safehouse_project_version}
+
 Usage:
   $(basename "$0") [policy options]
   $(basename "$0") [policy options] [--] <command> [args...]
@@ -93,6 +99,9 @@ Output options:
       Print effective workdir/grants/profile selection summary to stderr
 
 General:
+  --version
+      Show project version
+
   -h, --help
       Show this help
 
@@ -250,6 +259,10 @@ main() {
     fi
 
     case "$1" in
+      --version)
+        print_version
+        exit 0
+        ;;
       -h|--help)
         usage
         exit 0

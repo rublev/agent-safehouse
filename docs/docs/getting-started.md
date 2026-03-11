@@ -12,7 +12,7 @@ Standalone script:
 
 ```bash
 mkdir -p ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/eugene1g/agent-safehouse/main/dist/safehouse.sh \
+curl -fsSL https://github.com/eugene1g/agent-safehouse/releases/latest/download/safehouse.sh \
   -o ~/.local/bin/safehouse
 chmod +x ~/.local/bin/safehouse
 ```
@@ -134,12 +134,12 @@ Safehouse ships self-contained launchers:
 
 ```bash
 # Online launcher
-curl -fsSL https://raw.githubusercontent.com/eugene1g/agent-safehouse/main/dist/Claude.app.sandboxed.command \
+curl -fsSL __SAFEHOUSE_RELEASE_RAW_DIST_BASE_URL__/Claude.app.sandboxed.command \
   -o ~/Downloads/Claude.app.sandboxed.command
 chmod +x ~/Downloads/Claude.app.sandboxed.command
 
 # Offline launcher
-curl -fsSL https://raw.githubusercontent.com/eugene1g/agent-safehouse/main/dist/Claude.app.sandboxed-offline.command \
+curl -fsSL __SAFEHOUSE_RELEASE_RAW_DIST_BASE_URL__/Claude.app.sandboxed-offline.command \
   -o ~/Downloads/Claude.app.sandboxed-offline.command
 chmod +x ~/Downloads/Claude.app.sandboxed-offline.command
 ```

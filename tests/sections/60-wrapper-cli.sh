@@ -14,8 +14,29 @@ run_section_wrapper_and_cli() {
   local invalid_cli_spec invalid_cli_arg invalid_cli_pass_message invalid_cli_fail_message
   local static_policy_spec static_policy_path static_policy_label
   local launcher_spec launcher_path launcher_label launcher_marker
+  local expected_version cli_version help_output dist_version dist_help_output
 
   section_begin "safehouse.sh Entry Point"
+  expected_version="$(awk 'NR == 1 { sub(/\r$/, "", $0); print; exit }' "${REPO_ROOT}/VERSION")"
+  cli_version="$("$SAFEHOUSE" --version 2>/dev/null)"
+  if [[ -n "$expected_version" && "$cli_version" == "Agent Safehouse ${expected_version}" ]]; then
+    log_pass "safehouse.sh --version prints project version"
+  else
+    log_fail "safehouse.sh --version prints project version"
+  fi
+
+  help_output="$("$SAFEHOUSE" --help 2>/dev/null)"
+  if [[ "$help_output" == *"$cli_version"* ]]; then
+    log_pass "safehouse.sh --help includes project version"
+  else
+    log_fail "safehouse.sh --help includes project version"
+  fi
+  if [[ "$help_output" == *"--version"* ]]; then
+    log_pass "safehouse.sh --help documents --version"
+  else
+    log_fail "safehouse.sh --help documents --version"
+  fi
+
   set +e
   no_command_policy="$("$SAFEHOUSE" 2>/dev/null)"
   no_command_status=$?
@@ -261,6 +282,25 @@ EOF
   assert_policy_not_contains "$dist_apps_static" "custom output-dir apps static policy omits stale apple-build-tools feature text" "apple-build-tools"
   assert_policy_not_contains "$dist_apps_static" "custom output-dir apps static policy omits LLDB integration by default" ";; Integration: LLDB"
   assert_policy_not_contains "$dist_path" "custom dist safehouse omits stale apple-build-tools feature text" "apple-build-tools"
+
+  dist_version="$("$dist_path" --version 2>/dev/null)"
+  if [[ "$dist_version" == "$cli_version" ]]; then
+    log_pass "dist safehouse --version matches bin/safehouse.sh"
+  else
+    log_fail "dist safehouse --version matches bin/safehouse.sh"
+  fi
+
+  dist_help_output="$("$dist_path" --help 2>/dev/null)"
+  if [[ "$dist_help_output" == *"$dist_version"* ]]; then
+    log_pass "dist safehouse --help includes project version"
+  else
+    log_fail "dist safehouse --help includes project version"
+  fi
+  if [[ "$dist_help_output" == *"--version"* ]]; then
+    log_pass "dist safehouse --help documents --version"
+  else
+    log_fail "dist safehouse --help documents --version"
+  fi
 
   set +e
   dist_no_command_policy="$("$dist_path" 2>/dev/null)"

@@ -20,7 +20,7 @@ Standalone script:
 
 ```bash
 mkdir -p ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/eugene1g/agent-safehouse/main/dist/safehouse.sh \
+curl -fsSL https://github.com/eugene1g/agent-safehouse/releases/latest/download/safehouse.sh \
   -o ~/.local/bin/safehouse
 chmod +x ~/.local/bin/safehouse
 ```

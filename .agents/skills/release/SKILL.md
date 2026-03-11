@@ -12,7 +12,8 @@ Historical changelog sections are append-only by default.
 Do not rewrite, normalize, or reformat older release entries to match a newer structure unless the user explicitly asks for a changelog migration or cleanup pass.
 
 This skill is responsible for proposing the next release version from the last published release.
-Write that version into the new `CHANGELOG.md` heading unless the user explicitly gives a different target version.
+The repo-root `VERSION` file is the canonical version source for Agent Safehouse.
+Write the selected version into `VERSION` and into the new `CHANGELOG.md` heading unless the user explicitly gives a different target version.
 Default to a stable release. Only choose a prerelease version such as `-rc.N` or `-beta.N` when the user explicitly asks for a prerelease.
 
 ## Workflow
@@ -87,6 +88,7 @@ Default to a stable release. Only choose a prerelease version such as `-rc.N` or
    - whether the Homebrew tap will be updated
    - the exact next actions you intend to take after confirmation
    The exact next actions should be listed in order:
+   - update `VERSION`
    - update `CHANGELOG.md`
    - regenerate `dist/`
    - run the verification gate
@@ -97,7 +99,8 @@ Default to a stable release. Only choose a prerelease version such as `-rc.N` or
    Stop after presenting this overview and wait for explicit user confirmation.
    Do not update `CHANGELOG.md`, regenerate `dist/`, run the verification gate, create commits, create tags, push commits, push tags, create GitHub releases, edit GitHub releases, or publish the Homebrew tap until the user explicitly confirms.
 
-8. After confirmation, update `CHANGELOG.md`.
+8. After confirmation, update `VERSION` and `CHANGELOG.md`.
+   Write the selected version string into the repo-root `VERSION` file with no extra prose.
    For a tagged release, create or update a heading shaped like `## [1.2.3] - YYYY-MM-DD`, using the version you selected in step 2, then move or rewrite the relevant unreleased bullets underneath it.
    Treat `## [Unreleased]` as the working buffer for the next release.
    Move only the notes that are shipping in the release you are drafting.
@@ -124,7 +127,7 @@ Default to a stable release. Only choose a prerelease version such as `-rc.N` or
    If the verification gate cannot run because the current shell is already sandboxed or the environment is otherwise unsuitable, stop before publishing and tell the user.
 
 10. After confirmation, publish the GitHub release locally with `gh`.
-   Derive the final tag as `v<version>`.
+   Derive the final tag as `v<version>` from the selected version written to `VERSION`.
    Commit and push the release-ready state.
    Create and push the tag.
    Extract the new release notes from the new `CHANGELOG.md` section and validate that the extracted notes are not empty.

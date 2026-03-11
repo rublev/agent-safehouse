@@ -15,6 +15,8 @@ output_path_explicit=0
 output_dir_explicit=0
 
 GENERATOR="${ROOT_DIR}/bin/safehouse.sh"
+project_version_file="${ROOT_DIR}/VERSION"
+project_version_placeholder="__SAFEHOUSE_PROJECT_VERSION__"
 template_root=""
 template_home=""
 template_workdir=""
@@ -46,6 +48,39 @@ Options:
   -h, --help
       Show this help
 USAGE
+}
+
+read_project_version() {
+  local version=""
+
+  if [[ ! -f "$project_version_file" ]]; then
+    echo "Missing VERSION file: ${project_version_file}" >&2
+    exit 1
+  fi
+
+  IFS= read -r version < "$project_version_file" || true
+  version="${version%%$'\r'}"
+  if [[ -z "$version" ]]; then
+    echo "VERSION file is empty: ${project_version_file}" >&2
+    exit 1
+  fi
+
+  if [[ "$version" =~ [[:cntrl:]] ]]; then
+    echo "VERSION file contains control characters: ${project_version_file}" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$version"
+}
+
+escape_for_shell_double_quotes() {
+  local value="$1"
+
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  value="${value//\$/\\$}"
+  value="${value//\`/\\\`}"
+  printf '%s' "$value"
 }
 
 to_abs_path() {
@@ -389,11 +424,29 @@ SCRIPT
 }
 
 emit_safehouse_globals() {
-  awk '
+  local project_version="$1"
+  local escaped_project_version
+
+  escaped_project_version="$(escape_for_shell_double_quotes "$project_version")"
+
+  awk -v embedded_version="$escaped_project_version" -v placeholder="$project_version_placeholder" '
     NR <= 2 { next }
     /^# shellcheck source=bin\/lib\/common.sh$/ { exit }
+    $0 == "safehouse_project_version_embedded=\"" placeholder "\"" {
+      print "safehouse_project_version_embedded=\"" embedded_version "\""
+      replaced = 1
+      next
+    }
     { print }
-  ' "${ROOT_DIR}/bin/safehouse.sh"
+    END {
+      if (replaced != 1) {
+        exit 64
+      }
+    }
+  ' "${ROOT_DIR}/bin/safehouse.sh" || {
+    echo "Failed to embed project version into dist script globals." >&2
+    exit 1
+  }
 
   echo ""
 }
@@ -682,11 +735,12 @@ SCRIPT
 
 emit_dist_script_body() {
   local embedded_profiles_last_modified_utc="$1"
+  local project_version="$2"
 
   emit_banner "$embedded_profiles_last_modified_utc"
   emit_array_declaration "PROFILE_KEYS" "${profile_files[@]}"
   emit_embedded_profiles_function
-  emit_safehouse_globals
+  emit_safehouse_globals "$project_version"
   emit_inlined_runtime_sources
   emit_embedded_overrides
 }
@@ -694,13 +748,14 @@ emit_dist_script_body() {
 write_dist_script() {
   local target_path="$1"
   local embedded_profiles_last_modified_utc="$2"
+  local project_version="$3"
   local tmp_output
 
   mkdir -p "$(dirname "$target_path")"
   tmp_output="$(mktemp "${target_path}.XXXXXX")"
 
   {
-    emit_dist_script_body "$embedded_profiles_last_modified_utc"
+    emit_dist_script_body "$embedded_profiles_last_modified_utc" "$project_version"
     echo 'main "$@"'
   } >"$tmp_output"
 
@@ -1213,9 +1268,10 @@ trap cleanup_template_root EXIT
 collect_profiles
 validate_profiles
 
+project_version="$(read_project_version)"
 embedded_profiles_last_modified_utc="$(resolve_embedded_profiles_last_modified_utc)"
 
-write_dist_script "$output_path" "$embedded_profiles_last_modified_utc"
+write_dist_script "$output_path" "$embedded_profiles_last_modified_utc" "$project_version"
 write_claude_launcher "$launcher_path"
 
 generate_static_policy_files
