@@ -283,7 +283,7 @@ main() {
   ensure_release_asset "$tag"
 
   tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/safehouse-homebrew.XXXXXX")"
-  trap 'rm -rf "$tmpdir"' EXIT
+  trap "rm -rf \"$tmpdir\"" EXIT
   asset_path="${tmpdir}/safehouse.sh"
 
   echo "Downloading release asset: ${asset_url}"
