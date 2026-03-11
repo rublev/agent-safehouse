@@ -118,6 +118,21 @@ Starter snippets (copy/paste and adapt paths/names):
 
 If tests cannot run because your session is already sandboxed, call that out in your PR and include static validation details instead.
 
+## Releasing
+
+Releases are done through the repo-local `release` skill at
+[`./.agents/skills/release/SKILL.md`](./.agents/skills/release/SKILL.md).
+
+Use a local agent with that skill to:
+
+- inspect commits and diffs since the last published stable release
+- choose the next SemVer version
+- draft the new `CHANGELOG.md` release section
+- present a dry-run overview and wait for explicit confirmation
+- after confirmation, update `CHANGELOG.md`, regenerate `dist/`, run verification, publish the GitHub release, and publish the stable Homebrew tap
+
+`RELEASE.md` is only a short pointer/summary for that workflow.
+
 ## Debugging Sandbox Rejections
 
 Use `/usr/bin/log` to watch denial events:
@@ -157,6 +172,7 @@ Use `/usr/bin/log` to watch denial events:
 - Describe security/least-privilege impact (especially for new allow rules).
 - Include test evidence (`./tests/run.sh`) or clearly state why tests were not runnable.
 - Confirm whether `dist/` was regenerated and committed (when required).
+- If preparing a release, confirm `CHANGELOG.md` has a matching SemVer section for the tag.
 
 ## Design Guidance for Reviews
 
