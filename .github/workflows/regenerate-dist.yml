@@ -2,6 +2,8 @@ name: Regenerate Dist Artifacts
 
 on:
   push:
+    tags-ignore:
+      - "*"
     paths:
       - "scripts/**"
       - "profiles/**"
