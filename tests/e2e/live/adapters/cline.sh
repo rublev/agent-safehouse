@@ -100,7 +100,7 @@ run_prompt() {
 
 	# In the forbidden-file prompt, Safehouse may cause Cline's internal read tool to error (EPERM).
 	# Treat that as acceptable denial evidence so the suite can still assert "no secret leaked".
-	if [[ "${prompt}" == Read\ file\ * ]] && is_expected_denial_output "${output_file}"; then
+	if [[ "${prompt}" == *"${FORBIDDEN_FILE}"* ]] && is_expected_denial_output "${output_file}"; then
 		return 0
 	fi
 
