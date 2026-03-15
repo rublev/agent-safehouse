@@ -4,12 +4,18 @@
 ;; browser automation under Safehouse.
 ;; Source: 55-integrations-optional/agent-browser.sb
 ;; #safehouse-test-id:agent-browser-integration#
-;; $$require=55-integrations-optional/chromium-headless.sb$$
+;; $$require=55-integrations-optional/chromium-full.sb$$
 ;; ---------------------------------------------------------------------------
 
 ;; `agent-browser` keeps daemon sockets, pid files, screenshots, saved state,
-;; and user defaults under ~/.agent-browser. Chromium/AppKit launch rules come
-;; from the shared chromium-headless integration.
+;; and user defaults under ~/.agent-browser.
+;;
+;; Upstream installs and launches the full Chrome-for-Testing app by default on
+;; macOS, even when running headless. That means the default Safehouse contract
+;; needs the shared full-browser Chromium launch allowances here. A lighter
+;; headless Chromium binary may still work when the caller explicitly overrides
+;; the browser via --executable-path / AGENT_BROWSER_EXECUTABLE_PATH, but that
+;; is an opt-in override path rather than the default integration behavior.
 
 (allow file-read* file-write*
     (home-literal "")                                                 ;; Traverse HOME when workdir is outside $HOME and the CLI probes ~/.agent-browser directly.
