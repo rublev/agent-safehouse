@@ -26,6 +26,24 @@ load ../../test_helper.bash
   '
 }
 
+@test "[EXECUTION] default sanitized mode appends common Homebrew and user bin paths" { # issue #13
+  PATH="/usr/bin:/bin:/usr/sbin:/sbin" \
+  safehouse_ok -- /bin/sh -c '
+    case ":${PATH:-}:" in
+      *:/opt/homebrew/bin:*) ;;
+      *) exit 1 ;;
+    esac &&
+    case ":${PATH:-}:" in
+      *:/opt/homebrew/sbin:*) ;;
+      *) exit 1 ;;
+    esac &&
+    case ":${PATH:-}:" in
+      *:"${HOME}/.local/bin":*) ;;
+      *) exit 1 ;;
+    esac
+  '
+}
+
 @test "[EXECUTION] --env passes through the caller environment" {
   SAFEHOUSE_TEST_SECRET="secret-value" safehouse_ok --env -- /bin/sh -c '[ "${SAFEHOUSE_TEST_SECRET:-}" = "secret-value" ]'
 }
