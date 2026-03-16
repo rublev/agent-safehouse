@@ -19,3 +19,4 @@ telemetry-id
 
 # vscode
 *.code-workspace
+.mcp.json
