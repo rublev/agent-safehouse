@@ -16,3 +16,6 @@ telemetry-id
 /tests-e2e/agents/bin/
 /tests-tmux/agents/cursor-agent/home/
 /tests-tmux/agents/python/venv/
+
+# vscode
+*.code-workspace
