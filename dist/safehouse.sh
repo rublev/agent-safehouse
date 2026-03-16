@@ -45,6 +45,7 @@ PROFILE_KEYS=(
   "profiles/55-integrations-optional/kubectl.sb"
   "profiles/55-integrations-optional/lldb.sb"
   "profiles/55-integrations-optional/macos-gui.sb"
+  "profiles/55-integrations-optional/microphone.sb"
   "profiles/55-integrations-optional/playwright-chrome.sb"
   "profiles/55-integrations-optional/process-control.sb"
   "profiles/55-integrations-optional/shell-init.sb"
@@ -162,7 +163,6 @@ __SAFEHOUSE_EMBEDDED_profiles_00_base_sb__
     (home-literal "/.cache")                                          ;; XDG cache root traversal needed by tools probing cache locations.
     (home-literal "/.local")                                          ;; XDG data root traversal needed by tools probing ~/.local paths.
     (home-literal "/.local/share")                                    ;; XDG data share dir traversal needed by tools probing data locations.
-    (home-literal "/.local/bin")                                      ;; Agents stat this before installing binaries into ~/.local/bin.
 )
 
 ;; User preference reads needed by local agents/CLIs at startup.
@@ -174,6 +174,7 @@ __SAFEHOUSE_EMBEDDED_profiles_00_base_sb__
     (home-literal "/.CFUserTextEncoding")                             ;; User text encoding prefs; read by many processes for correct string handling.
     (home-literal "/.config")                                         ;; XDG config root directory listing for tool discovery.
     (home-literal "/.cache")                                          ;; XDG cache root directory listing for tool discovery.
+    (home-literal "/.local/bin")                                      ;; PATH probing may readdir ~/.local/bin before spawning user-installed helpers.
 )
 
 ;; We intentionally do NOT block broad process primitives by default: agent workflows frequently chain many subprocesses.
@@ -1750,6 +1751,37 @@ __SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_lldb_sb__
 )
 __SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_macos_gui_sb__
       ;;
+    "profiles/55-integrations-optional/microphone.sb")
+      cat <<'__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_microphone_sb__'
+;; ---------------------------------------------------------------------------
+;; Integration: Microphone
+;; Microphone capture support via TCC, CoreAudio, and CMIO registration paths.
+;; Source: 55-integrations-optional/microphone.sb
+;; ---------------------------------------------------------------------------
+
+;; Mirrors Apple's narrow app-sandbox audio-input helper.
+
+(allow device-microphone)                                             ;; Microphone device capture itself.
+
+(allow iokit-open-user-client
+    (require-all
+        (iokit-connection "AppleHDAEngineInput")                      ;; Restrict access to the Apple HDA input engine.
+        (iokit-user-client-class
+            "IOAudioControlUserClient"                                ;; Input-side control channel for microphone devices.
+            "IOAudioEngineUserClient"                                 ;; Input-side engine channel for microphone sample flow.
+        )
+    )
+)
+
+(allow mach-lookup
+    (global-name "com.apple.tccd")                                    ;; User-session TCC checks for first-use microphone permission prompts.
+    (global-name "com.apple.tccd.system")                             ;; System TCC companion consulted during permission resolution.
+    (global-name "com.apple.audio.AudioComponentRegistrar")           ;; Audio component registration needed during input device setup.
+    (global-name "com.apple.audio.audiohald")                         ;; CoreAudio HAL daemon used during microphone device discovery.
+    (global-name "com.apple.cmio.registerassistantservice.system-extensions")  ;; CMIO assistant registration for system-extension-backed devices.
+)
+__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_microphone_sb__
+      ;;
     "profiles/55-integrations-optional/playwright-chrome.sb")
       cat <<'__SAFEHOUSE_EMBEDDED_profiles_55_integrations_optional_playwright_chrome_sb__'
 ;; ---------------------------------------------------------------------------
@@ -2071,8 +2103,8 @@ __SAFEHOUSE_EMBEDDED_profiles_60_agents_auggie_sb__
 ;; Claude Code CLI binary, state, config, and MCP integration paths.
 ;; Source: 60-agents/claude-code.sb
 ;; $$command=claude,claude-code$$
-;; Include browser-native-messaging so Claude's Chrome bridge works (`claude --chrome`).
-;; $$require=55-integrations-optional/keychain.sb,55-integrations-optional/browser-native-messaging.sb$$
+;; Include browser-native-messaging for `claude --chrome` and microphone for voice mode.
+;; $$require=55-integrations-optional/keychain.sb,55-integrations-optional/browser-native-messaging.sb,55-integrations-optional/microphone.sb$$
 ;; ---------------------------------------------------------------------------
 
 ;; - installer-managed binary path: ~/.local/bin/claude (symlink target under ~/.local/share/claude/versions/*)
@@ -6962,6 +6994,7 @@ policy_embedded_optional_integration_features=(
   "kubectl"
   "lldb"
   "macos-gui"
+  "microphone"
   "playwright-chrome"
   "process-control"
   "shell-init"
@@ -6970,7 +7003,7 @@ policy_embedded_optional_integration_features=(
   "xcode"
 )
 
-policy_embedded_supported_enable_features="1password, agent-browser, browser-native-messaging, chromium-full, chromium-headless, cleanshot, clipboard, cloud-credentials, docker, electron, kubectl, lldb, macos-gui, playwright-chrome, process-control, shell-init, spotlight, ssh, xcode, all-agents, all-apps, wide-read"
+policy_embedded_supported_enable_features="1password, agent-browser, browser-native-messaging, chromium-full, chromium-headless, cleanshot, clipboard, cloud-credentials, docker, electron, kubectl, lldb, macos-gui, microphone, playwright-chrome, process-control, shell-init, spotlight, ssh, xcode, all-agents, all-apps, wide-read"
 
 policy_dist_emit_embedded_profile_requirement_tokens() {
   case "$1" in
@@ -7085,6 +7118,9 @@ policy_dist_emit_embedded_profile_requirement_tokens() {
     "profiles/55-integrations-optional/macos-gui.sb")
       printf '%s\n' "55-integrations-optional/clipboard.sb"
       ;;
+    "profiles/55-integrations-optional/microphone.sb")
+      :
+      ;;
     "profiles/55-integrations-optional/playwright-chrome.sb")
       printf '%s\n' "55-integrations-optional/chromium-full.sb"
       ;;
@@ -7113,7 +7149,7 @@ policy_dist_emit_embedded_profile_requirement_tokens() {
       :
       ;;
     "profiles/60-agents/claude-code.sb")
-      printf '%s\n' "55-integrations-optional/keychain.sb" "55-integrations-optional/browser-native-messaging.sb"
+      printf '%s\n' "55-integrations-optional/keychain.sb" "55-integrations-optional/browser-native-messaging.sb" "55-integrations-optional/microphone.sb"
       ;;
     "profiles/60-agents/cline.sb")
       printf '%s\n' "55-integrations-optional/keychain.sb"
@@ -7269,6 +7305,9 @@ policy_dist_emit_embedded_profile_command_alias_tokens() {
       ;;
     "profiles/55-integrations-optional/macos-gui.sb")
       printf '%s\n' "macos-gui"
+      ;;
+    "profiles/55-integrations-optional/microphone.sb")
+      printf '%s\n' "microphone"
       ;;
     "profiles/55-integrations-optional/playwright-chrome.sb")
       printf '%s\n' "playwright-chrome"
@@ -7455,6 +7494,9 @@ policy_dist_emit_embedded_profile_exec_env_defaults() {
     "profiles/55-integrations-optional/macos-gui.sb")
       :
       ;;
+    "profiles/55-integrations-optional/microphone.sb")
+      :
+      ;;
     "profiles/55-integrations-optional/playwright-chrome.sb")
       printf '%s\n' "PLAYWRIGHT_MCP_SANDBOX=false"
       ;;
@@ -7592,7 +7634,6 @@ policy_dist_append_preassembled_fixed_before_home() {
     (home-literal "/.cache")                                          ;; XDG cache root traversal needed by tools probing cache locations.
     (home-literal "/.local")                                          ;; XDG data root traversal needed by tools probing ~/.local paths.
     (home-literal "/.local/share")                                    ;; XDG data share dir traversal needed by tools probing data locations.
-    (home-literal "/.local/bin")                                      ;; Agents stat this before installing binaries into ~/.local/bin.
 )
 
 ;; User preference reads needed by local agents/CLIs at startup.
@@ -7604,6 +7645,7 @@ policy_dist_append_preassembled_fixed_before_home() {
     (home-literal "/.CFUserTextEncoding")                             ;; User text encoding prefs; read by many processes for correct string handling.
     (home-literal "/.config")                                         ;; XDG config root directory listing for tool discovery.
     (home-literal "/.cache")                                          ;; XDG cache root directory listing for tool discovery.
+    (home-literal "/.local/bin")                                      ;; PATH probing may readdir ~/.local/bin before spawning user-installed helpers.
 )
 
 ;; We intentionally do NOT block broad process primitives by default: agent workflows frequently chain many subprocesses.

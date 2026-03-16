@@ -24,6 +24,7 @@
 - `docker`
 - `kubectl`
 - `macos-gui`
+- `microphone`
 - `electron` (implies `macos-gui`)
 - `chromium-headless`
 - `chromium-full` (implies `chromium-headless`)

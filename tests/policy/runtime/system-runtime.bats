@@ -76,6 +76,20 @@ load ../../test_helper.bash
   HOME="$fake_home" safehouse_denied -- /bin/cat "$cache_file"
 }
 
+@test "[EXECUTION] default sandbox can list ~/.local/bin without reading installed helper contents" {
+  local fake_home local_bin_dir helper_path
+
+  fake_home="$(sft_fake_home)" || return 1
+  local_bin_dir="${fake_home}/.local/bin"
+  helper_path="${local_bin_dir}/voice-helper"
+
+  mkdir -p "$local_bin_dir"
+  printf '%s\n' "secret-helper" > "$helper_path"
+
+  HOME="$fake_home" safehouse_ok -- /bin/ls "$local_bin_dir" >/dev/null
+  HOME="$fake_home" safehouse_denied -- /bin/cat "$helper_path"
+}
+
 @test "[EXECUTION] default sandbox can write to tmp" {
   local tmp_canary
   tmp_canary="/tmp/safehouse-bats-tmp-canary.$$"

@@ -3,7 +3,7 @@
 #
 # Agent profile injection.
 # Verifies that agent commands auto-inject their required integration
-# profiles (keychain, browser-native-messaging) via $$require=$$ metadata.
+# profiles (keychain, browser-native-messaging, microphone) via $$require=$$ metadata.
 #
 load ../../test_helper.bash
 
@@ -36,6 +36,13 @@ load ../../test_helper.bash
   profile="$(safehouse_profile -- claude)"
 
   sft_assert_includes_source "$profile" "55-integrations-optional/browser-native-messaging.sb"
+}
+
+@test "[POLICY-ONLY] claude command auto-injects microphone profile for voice mode" {
+  local profile
+  profile="$(safehouse_profile -- claude)"
+
+  sft_assert_includes_source "$profile" "55-integrations-optional/microphone.sb"
 }
 
 @test "[POLICY-ONLY] kilo command auto-injects keychain profile" {

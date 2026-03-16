@@ -43,6 +43,7 @@ Enable only when required for the current task:
 - `shell-init`: shell startup/config file reads.
 - `ssh`: extended SSH agent socket and system SSH config integration.
 - `spotlight`: Spotlight metadata queries via `mdfind` / `mdls`.
+- `microphone`: microphone capture via TCC/CoreAudio/CMIO without broader GUI grants.
 - `browser-native-messaging`: browser host messaging integration.
 - `playwright-chrome`: Playwright Chrome-family channels plus injected `PLAYWRIGHT_MCP_SANDBOX=false`.
 - `process-control`: host process enumeration/signalling for local supervision tools.
