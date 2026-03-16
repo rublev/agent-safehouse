@@ -15,6 +15,7 @@ This skill is responsible for proposing the next release version from the last p
 The repo-root `VERSION` file is the canonical version source for Agent Safehouse.
 Write the selected version into `VERSION` and into the new `CHANGELOG.md` heading unless the user explicitly gives a different target version.
 Default to a stable release. Only choose a prerelease version such as `-rc.N` or `-beta.N` when the user explicitly asks for a prerelease.
+If the user explicitly gives the target version, honor it even if the default SemVer analysis would have chosen a different bump. In that case, note briefly in the dry run that the version came from an explicit user override.
 
 ## Workflow
 
@@ -55,6 +56,14 @@ Default to a stable release. Only choose a prerelease version such as `-rc.N` or
    Use `git show --stat <sha>` or `git diff <from-ref>..<to-ref> -- <path>` for commits that are not obvious from the subject line.
    When a commit touches both source files and `dist/`, review only the source files and do not open the generated `dist/` portion.
    For any changed sandbox profile, inspect the actual diff before summarizing it.
+   Also collect contributor context for shipped work:
+   - Extract merged PR numbers from commit subjects, merge commits, or `gh pr list --state merged ...` when needed.
+   - Use `gh pr view <num> --json number,title,author,url,closingIssuesReferences`.
+   - For any linked or clearly relevant issue, use `gh issue view <num> --json number,title,author,url`.
+   - Prefer crediting external contributors and issue reporters whose merged PRs or closed issues directly map to shipped changes in this release.
+   - Do not include open issues or unmerged PRs in `Thanks` unless the user explicitly asks.
+   - If the user explicitly asks to include a specific PR or issue in `Thanks`, include it even when it is still open or unmerged.
+   - Do not thank the release author for their own PRs or issues unless the user explicitly asks.
 
 5. Draft changelog bullets in this order:
    - `### Upgrade Notes`
@@ -62,6 +71,7 @@ Default to a stable release. Only choose a prerelease version such as `-rc.N` or
    - `### Bug Fixes`
    - `### Chores`
    - `### Misc`
+   - `### Thanks`
    - `### Changed Sandboxing Profiles`
 
 6. Keep the changelog high signal.
@@ -74,7 +84,11 @@ Default to a stable release. Only choose a prerelease version such as `-rc.N` or
    - Omit `dist/`-only changes and pure `chore: regenerate dist artifacts` commits from changelog analysis.
    - Do not treat generated `dist/` diffs as independent features, fixes, chores, or reasons to bump the version.
    - Put docs-only, tests-only, and internal cleanup into `Chores` only if they are worth calling out.
+   - If new test coverage materially improves confidence or predictability for users, call that out in `Chores` instead of burying it.
    - Use `Misc` only for noteworthy items that do not fit `Features`, `Bug Fixes`, or `Chores`.
+   - Use `Thanks` for contributor shout-outs tied to shipped work. Format each bullet with the contributor's GitHub username as an `@mention`, not their full name.
+   - Do not start `Thanks` bullets with the word `Thanks`; the section heading already carries that meaning.
+   - Link each `Thanks` bullet to the relevant merged PR or closed issue, and place that link at the end of the sentence after the blurb.
    - If any `.sb` files changed under `profiles/`, always include `### Changed Sandboxing Profiles`.
 
 7. Dry run and confirmation gate.
@@ -111,8 +125,8 @@ Default to a stable release. Only choose a prerelease version such as `-rc.N` or
    After moving shipped notes out of `## [Unreleased]`, keep that section sparse:
    - Always keep `### Upgrade Notes` with either real bullets or `- No special notes.`
    - Always keep `### Changed Sandboxing Profiles` with either real bullets or `- No profiles changed.`
-   - Keep `### Features`, `### Bug Fixes`, `### Chores`, and `### Misc` only when they contain actual unreleased notes.
-   - Remove empty `Features`, `Bug Fixes`, `Chores`, and `Misc` subsections instead of leaving placeholder text.
+   - Keep `### Features`, `### Bug Fixes`, `### Chores`, `### Misc`, and `### Thanks` only when they contain actual unreleased notes.
+   - Remove empty `Features`, `Bug Fixes`, `Chores`, `Misc`, and `Thanks` subsections instead of leaving placeholder text.
    Apply the current structure only to the section you are drafting.
    Leave older release sections in their existing format unless the user explicitly asks to revise historical entries.
 
@@ -148,16 +162,19 @@ When any sandbox profiles changed in the release range, add a separate section:
 ```md
 ### Changed Sandboxing Profiles
 
-- [`profiles/55-integrations-optional/keychain.sb`](https://github.com/eugene1g/agent-safehouse/blob/<permalink-ref>/profiles/55-integrations-optional/keychain.sb): Tightened keychain access so agents only get the lookups required for login flows.
+- [`keychain.sb`](https://github.com/eugene1g/agent-safehouse/compare/<from-ref>...<to-ref>#diff-<sha256(path)>): Tightened keychain access so agents only get the lookups required for login flows.
 ```
 
 Rules:
 
 - Include every changed `.sb` file under `profiles/`.
 - For each bullet, say what changed and why in one short sentence.
-- Use a GitHub permalink to the profile file, not a branch link.
-- Use the selected release tag as `<permalink-ref>`, for example `v1.2.3` or `v1.3.0-rc.1`.
-- When drafting the new release section before the tag exists remotely, still write the final release-tag link into `CHANGELOG.md`.
+- Use the profile basename as the markdown label, not the full repo-relative path.
+- Link each bullet to the GitHub compare diff for that exact file between the baseline release and the selected release, not to a blob permalink.
+- Build the URL as `https://github.com/eugene1g/agent-safehouse/compare/<from-ref>...<to-ref>#diff-<sha256(path)>`.
+- Compute `<sha256(path)>` from the literal repo-relative file path, for example `printf '%s' 'profiles/.../.sb' | shasum -a 256 | awk '{print $1}'`.
+- Use the resolved baseline release tag as `<from-ref>` and the selected release tag as `<to-ref>`, for example `v1.2.2...v1.2.3` or `v1.2.3...v1.3.0-rc.1`.
+- When drafting the new release section before the tag exists remotely, still write the final compare link using the final selected release tag as `<to-ref>`.
 
 ## Output Shape
 
@@ -184,9 +201,13 @@ Use plain markdown bullets under these headings when they have content:
 
 - ...
 
+### Thanks
+
+- @username adding or surfacing shipped behavior in [#123](https://github.com/eugene1g/agent-safehouse/pull/123).
+
 ### Changed Sandboxing Profiles
 
-- [`profiles/...`](https://github.com/eugene1g/agent-safehouse/blob/<permalink-ref>/profiles/...): What changed and why.
+- [`profile.sb`](https://github.com/eugene1g/agent-safehouse/compare/<from-ref>...<to-ref>#diff-<sha256(path)>): What changed and why.
 ```
 
 If a section has nothing worth shipping, omit filler bullets in the final release notes.
