@@ -61,7 +61,6 @@
     (home-literal "/.cache")                                          ;; XDG cache root traversal needed by tools probing cache locations.
     (home-literal "/.local")                                          ;; XDG data root traversal needed by tools probing ~/.local paths.
     (home-literal "/.local/share")                                    ;; XDG data share dir traversal needed by tools probing data locations.
-    (home-literal "/.local/bin")                                      ;; Agents stat this before installing binaries into ~/.local/bin.
 )
 
 ;; User preference reads needed by local agents/CLIs at startup.
@@ -73,6 +72,7 @@
     (home-literal "/.CFUserTextEncoding")                             ;; User text encoding prefs; read by many processes for correct string handling.
     (home-literal "/.config")                                         ;; XDG config root directory listing for tool discovery.
     (home-literal "/.cache")                                          ;; XDG cache root directory listing for tool discovery.
+    (home-literal "/.local/bin")                                      ;; PATH probing may readdir ~/.local/bin before spawning user-installed helpers.
 )
 
 ;; We intentionally do NOT block broad process primitives by default: agent workflows frequently chain many subprocesses.
