@@ -536,15 +536,24 @@ policy_render_to_path() {
 
 policy_render_to_stdout() {
   local render_status
+  local temp_output_path=""
 
-  policy_render_begin_stdout_target
-  if policy_render_emit_all_sections; then
+  # Render to a temporary file first, then stream it with cat. Repeated Bash
+  # builtin printf writes to a pipe can intermittently fail with EINTR under
+  # high-concurrency command substitutions, while rendering to a file avoids
+  # that path and cat handles stdout streaming robustly.
+  policy_render_to_path || return 1
+  temp_output_path="$policy_render_output_path"
+
+  if cat "$temp_output_path"; then
     :
   else
     render_status=$?
+    rm -f "$temp_output_path"
     policy_render_reset_output_state
     return "$render_status"
   fi
 
-  policy_render_close_target_fd
+  rm -f "$temp_output_path"
+  policy_render_reset_output_state
 }

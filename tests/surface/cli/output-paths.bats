@@ -42,3 +42,33 @@ load ../../test_helper.bash
   sft_assert_file_exists "$output_path"
   sft_assert_file_contains "$output_path" "(version 1)"
 }
+
+@test "--stdout stays stable under concurrent command-substitution capture" {
+  local fake_copilot_bin concurrency_log worker pid status
+  local -a pids=()
+
+  fake_copilot_bin="$(sft_workspace_path "copilot")"
+  concurrency_log="$(sft_workspace_path "stdout-concurrency.log")"
+  sft_make_fake_command "$fake_copilot_bin"
+  : > "$concurrency_log"
+
+  for worker in 1 2 3 4 5 6 7 8; do
+    (
+      for _ in 1 2 3 4 5 6 7 8; do
+        policy_output="$("$DIST_SAFEHOUSE" --stdout -- "$fake_copilot_bin")" || exit 1
+        [[ "$policy_output" == *"60-agents/copilot-cli.sb"* ]] || exit 1
+      done
+    ) >>"$concurrency_log" 2>&1 &
+    pids+=("$!")
+  done
+
+  status=0
+  for pid in "${pids[@]}"; do
+    if ! wait "$pid"; then
+      status=1
+    fi
+  done
+
+  [ "$status" -eq 0 ]
+  sft_assert_file_not_contains "$concurrency_log" "Interrupted system call"
+}
