@@ -4,15 +4,41 @@
 
 ### Upgrade Notes
 
+- No special notes.
+
+### Changed Sandboxing Profiles
+
+- No profiles changed.
+
+## [0.5.0] - 2026-03-17
+
+### Upgrade Notes
+
 - Safehouse now keeps the default workdir at the exact invocation directory instead of walking up to an enclosing Git root. This avoids accidentally widening access when you launch from a deeply nested folder inside a larger repo or beneath a home-directory Git tree. If you intentionally want broader repo access from a nested launch, grant it explicitly with `--add-dirs=/path/to/repo` or `--add-dirs-ro=/path/to/repo`.
+
+### Features
+
+- Added a reusable `microphone` optional integration for microphone capture via TCC, CoreAudio, CMIO, and the Apple HDA input path.
+- Claude Code now pulls that shared microphone integration automatically for voice mode instead of embedding microphone allowances directly in the agent profile.
 
 ### Bug Fixes
 
 - Ancestor `.git` directories without real repository metadata no longer widen the default workdir.
 
+### Chores
+
+- Added regression coverage for invocation-scoped workdir behavior, nested linked-worktree launches, trusted `.safehouse` discovery, microphone integration, and PATH probing.
+- Clarified the docs and machine-readable wrapper guidance so the default workdir contract matches the runtime behavior.
+
+### Thanks
+
+- @schmijos surfacing the default workdir auto-walk problem fixed in this release in [#52](https://github.com/eugene1g/agent-safehouse/issues/52).
+
 ### Changed Sandboxing Profiles
 
-- No profiles changed.
+- [`10-system-runtime.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.4.0...v0.5.0#diff-c27b7abd9dcf3cd976d593264e5d14dcfc2e10422b3dcdebb8bb9dbee4d611c8): Added narrow `~/.local/bin` traversal and listing access so PATH probing can find user-installed helpers without reading their contents.
+- [`microphone.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.4.0...v0.5.0#diff-dbfccfaa1929f95619d832f800692ab0400315aa6e601f0f2f2f1a6bd37fbda9): Added a reusable microphone integration covering TCC, CoreAudio, CMIO, and Apple HDA input access for voice-enabled agent workflows.
+- [`claude-code.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.4.0...v0.5.0#diff-caf651f708e889ca1935c3c382d551ccbed8eb81f611fab631829993fca117b7): Switched Claude Code voice mode to depend on the shared `microphone` integration instead of carrying microphone access inline.
 
 ## [0.4.0] - 2026-03-16
 
