@@ -13,9 +13,9 @@ This page documents the baseline assumptions Safehouse makes so default behavior
 
 These are baseline allowances intended to keep common workflows functional:
 
-- Selected workdir read/write (git root above CWD, otherwise CWD).
-- Existing linked Git worktrees for the selected repo root are granted read-only visibility when they exist at launch time.
-- Shared Git common-dir metadata for linked worktrees is granted read/write when it lives outside the selected workdir.
+- Selected invocation directory read/write by default.
+- Existing linked Git worktrees are granted read-only visibility only when the selected workdir itself is a Git worktree root.
+- Shared Git common-dir metadata for linked worktrees is granted read/write only when the selected workdir itself is a linked Git worktree root and that metadata lives outside the selected workdir.
 - Metadata-only traversal on `/`, the path to `$HOME`, and `$HOME` itself so runtimes can reach explicitly allowed home-scoped paths without opening broad home reads.
 - Directory-root reads for `~/.config` and `~/.cache` so tools can discover XDG locations; contents under those trees still need more specific grants.
 - Core system/runtime paths required by shells, compilers, and package managers.

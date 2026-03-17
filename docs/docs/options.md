@@ -65,8 +65,7 @@ Safehouse resolves the effective workdir in this order:
 
 1. `--workdir=DIR` (`--workdir=` disables the automatic workdir grant)
 2. `SAFEHOUSE_WORKDIR` (`SAFEHOUSE_WORKDIR=` also disables the automatic workdir grant)
-3. Git root above the invocation directory (if present)
-4. Otherwise the invocation directory
+3. Otherwise the invocation directory
 
 When the effective workdir is a Git worktree root:
 
