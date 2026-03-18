@@ -1,0 +1,27 @@
+;; ---------------------------------------------------------------------------
+;; Integration: Microphone
+;; Microphone capture support via TCC, CoreAudio, and CMIO registration paths.
+;; Source: 55-integrations-optional/microphone.sb
+;; ---------------------------------------------------------------------------
+
+;; Mirrors Apple's narrow app-sandbox audio-input helper.
+
+(allow device-microphone)                                             ;; Microphone device capture itself.
+
+(allow iokit-open-user-client
+    (require-all
+        (iokit-connection "AppleHDAEngineInput")                      ;; Restrict access to the Apple HDA input engine.
+        (iokit-user-client-class
+            "IOAudioControlUserClient"                                ;; Input-side control channel for microphone devices.
+            "IOAudioEngineUserClient"                                 ;; Input-side engine channel for microphone sample flow.
+        )
+    )
+)
+
+(allow mach-lookup
+    (global-name "com.apple.tccd")                                    ;; User-session TCC checks for first-use microphone permission prompts.
+    (global-name "com.apple.tccd.system")                             ;; System TCC companion consulted during permission resolution.
+    (global-name "com.apple.audio.AudioComponentRegistrar")           ;; Audio component registration needed during input device setup.
+    (global-name "com.apple.audio.audiohald")                         ;; CoreAudio HAL daemon used during microphone device discovery.
+    (global-name "com.apple.cmio.registerassistantservice.system-extensions")  ;; CMIO assistant registration for system-extension-backed devices.
+)

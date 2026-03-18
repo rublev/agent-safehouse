@@ -10,6 +10,62 @@
 
 - No profiles changed.
 
+## [0.5.1] - 2026-03-17
+
+### Upgrade Notes
+
+- No special notes.
+
+### Bug Fixes
+
+- Built-in absolute `file-read*` paths now resolve macOS compatibility symlinks such as `/private/etc/resolv.conf` and `/private/etc/localtime`, while keeping `xcode-select` pointer symlinks explicit so the default sandbox does not silently inherit a host-specific full Xcode bundle.
+- `--enable=lldb` now covers versioned/full Xcode app bundles and Apple private developer frameworks needed on hosts where LLDB loads Xcode-backed developer resources instead of only Command Line Tools.
+- Bundler can now read the macOS system default gemspec catalog under `/Library/Ruby/Gems`, restoring read-only Bundler commands such as `bundle --version` inside the sandbox.
+
+### Chores
+
+- Added regression coverage for built-in symlink-target rendering, `xcode-select` pointer exceptions, LLDB on Xcode-backed hosts, Bundler system gem reads, and file-symlink CLI grants.
+- Clarified the README and policy/distribution docs around built-in path resolution and its current scope.
+
+### Thanks
+
+- @technicalpickles surfacing the built-in symlink-resolution gap fixed in this release in [#54](https://github.com/eugene1g/agent-safehouse/issues/54).
+
+### Changed Sandboxing Profiles
+
+- [`ruby.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.5.0...v0.5.1#diff-e6c5527826f7eeab06d5ebadd9b3a6be91aa1b5c88874d651f9a60f758a1554e): Added read-only `/Library/Ruby/Gems` access so Bundler can enumerate macOS default gems without needing write access to system Ruby state.
+- [`lldb.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.5.0...v0.5.1#diff-9b1a1aee4fcd6c90b56db204faf4c05fcb1bec258503143aeb2c87d53b6dfdbd): Broadened LLDB's read-only Xcode coverage to include versioned app bundles and private developer frameworks needed when hosts select a full Xcode install.
+
+## [0.5.0] - 2026-03-17
+
+### Upgrade Notes
+
+- Safehouse now keeps the default workdir at the exact invocation directory instead of walking up to an enclosing Git root. This avoids accidentally widening access when you launch from a deeply nested folder inside a larger repo or beneath a home-directory Git tree. If you intentionally want broader repo access from a nested launch, grant it explicitly with `--add-dirs=/path/to/repo` or `--add-dirs-ro=/path/to/repo`.
+
+### Features
+
+- Added a reusable `microphone` optional integration for microphone capture via TCC, CoreAudio, CMIO, and the Apple HDA input path.
+- Claude Code now pulls that shared microphone integration automatically for voice mode instead of embedding microphone allowances directly in the agent profile.
+
+### Bug Fixes
+
+- Ancestor `.git` directories without real repository metadata no longer widen the default workdir.
+
+### Chores
+
+- Added regression coverage for invocation-scoped workdir behavior, nested linked-worktree launches, trusted `.safehouse` discovery, microphone integration, and PATH probing.
+- Clarified the docs and machine-readable wrapper guidance so the default workdir contract matches the runtime behavior.
+
+### Thanks
+
+- @schmijos surfacing the default workdir auto-walk problem fixed in this release in [#52](https://github.com/eugene1g/agent-safehouse/issues/52).
+
+### Changed Sandboxing Profiles
+
+- [`10-system-runtime.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.4.0...v0.5.0#diff-c27b7abd9dcf3cd976d593264e5d14dcfc2e10422b3dcdebb8bb9dbee4d611c8): Added narrow `~/.local/bin` traversal and listing access so PATH probing can find user-installed helpers without reading their contents.
+- [`microphone.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.4.0...v0.5.0#diff-dbfccfaa1929f95619d832f800692ab0400315aa6e601f0f2f2f1a6bd37fbda9): Added a reusable microphone integration covering TCC, CoreAudio, CMIO, and Apple HDA input access for voice-enabled agent workflows.
+- [`claude-code.sb`](https://github.com/eugene1g/agent-safehouse/compare/v0.4.0...v0.5.0#diff-caf651f708e889ca1935c3c382d551ccbed8eb81f611fab631829993fca117b7): Switched Claude Code voice mode to depend on the shared `microphone` integration instead of carrying microphone access inline.
+
 ## [0.4.0] - 2026-03-16
 
 ### Upgrade Notes

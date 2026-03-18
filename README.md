@@ -50,6 +50,14 @@ In practice, `stat "$HOME"` can succeed while `ls "$HOME"` and `cat ~/secret.txt
 
 If you want to remove even the default home exceptions, use `--append-profile`; appended profiles load last, so their deny rules can narrow earlier defaults.
 
+## Built-In System Path Resolution
+
+Safehouse's built-in `profiles/*` modules may include macOS compatibility paths such as `/etc`, `/private/etc/resolv.conf`, or `/private/etc/localtime`.
+
+At policy render time, Safehouse resolves built-in absolute paths from `allow file-read*` rules and emits matching grants for the real target path when the authored path is a symlink. That keeps host-specific system files working without broadening the source profiles to recursive `/private/etc` access.
+
+Current scope is intentionally limited to built-in absolute `literal` and `subpath` read grants. User-provided path grants still normalize separately, and writable or metadata-only built-in rules are not auto-expanded by this mechanism today.
+
 ## Documentation
 
 - Website: [agent-safehouse.dev](https://agent-safehouse.dev)
@@ -110,6 +118,6 @@ Example machine-local policy file:
 
 Use `--add-dirs-ro` or `--add-dirs` for normal shared-folder access, and keep `--append-profile` for machine-local policy exceptions or final deny/allow overrides. That pattern is useful when the repo is shared but each developer machine has different local mount points.
 
-Git worktrees are auto-detected at launch: the selected worktree gets the shared Git metadata access it needs when its common dir lives outside the selected workdir, and the other existing linked worktrees for that repo become readable by default for cross-tree inspection. That snapshot does not update for already-running processes, so if you create worktrees under a stable parent such as `~/worktrees`, prefer adding that root explicitly with `--add-dirs-ro`.
+Git worktrees are auto-detected at launch when the selected workdir itself is a Git worktree root: that worktree gets the shared Git metadata access it needs when its common dir lives outside the selected workdir, and the other existing linked worktrees for that repo become readable by default for cross-tree inspection. That snapshot does not update for already-running processes, so if you create worktrees under a stable parent such as `~/worktrees`, prefer adding that root explicitly with `--add-dirs-ro`.
 
 All detailed documentation (setup, usage, options, architecture, testing, debugging, and investigations) lives in the VitePress docs site.

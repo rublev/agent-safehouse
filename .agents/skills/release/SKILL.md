@@ -1,6 +1,6 @@
 ---
 name: release
-description: Run the local Agent Safehouse release flow: inspect commits since the last published release, propose the next SemVer version and changelog, present a dry-run for confirmation, then update changelog, publish the GitHub release, and publish the stable Homebrew tap when confirmed.
+description: "Run the local Agent Safehouse release flow: inspect commits since the last published release, propose the next SemVer version and changelog, present a dry-run for confirmation, then update changelog, publish the GitHub release, and publish the stable Homebrew tap when confirmed."
 ---
 
 # Release
